@@ -4,11 +4,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
-@Transactional
 public class StudentService {
 
     private final StudentRepository studentRepository;
@@ -23,7 +24,7 @@ public class StudentService {
     }
 
     public void addNewStudent(Student student) {
-        Optional<Student>  studentOptional = studentRepository.findStudentById(student.getEmail());
+        Optional<Student>  studentOptional = studentRepository.findStudentByEmail(student.getEmail());
         if(studentOptional.isPresent()) {
             throw new IllegalStateException("email taken");
         }
@@ -36,5 +37,41 @@ public class StudentService {
             throw new IllegalStateException("student with id " + studentId + " does not exists");
         }
         studentRepository.deleteById(studentId);
+    }
+
+    @Transactional
+    public void updateStudent(Long studentId, String name, String email, String dob, Integer age) {
+        Student student = studentRepository
+                .findById(studentId)
+                .orElseThrow(()->new IllegalStateException("student with id " + studentId + " does not exist"));
+        if(
+                name != null && name.length() > 0 &&
+                !Objects.equals(student.getName(),name)
+        ) {
+            student.setName(name);
+        }
+
+        if(
+                email != null && email.length() > 0 &&
+                !Objects.equals(student.getEmail(),email)
+        ) {
+            Optional<Student> studentOptional = studentRepository.findStudentByEmail(email);
+            if(studentOptional.isPresent()) {
+                throw new IllegalStateException("email taken");
+            }
+            student.setEmail(email);
+        }
+        if(dob != null) {
+            student.setDob(LocalDate.parse(dob));
+        }
+
+        if(age != null) {
+            student.setAge(age);
+        }
+    }
+
+    public Student getStudent(Long studentId) {
+        Optional<Student> student = studentRepository.findById(studentId);
+        return student.get();
     }
 }
